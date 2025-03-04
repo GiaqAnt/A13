@@ -2,8 +2,7 @@
 setlocal EnableDelayedExpansion
 
 rem Imposta JAVA_HOME se non è già definito
-IF NOT DEFINED JAVA_HOME SET JAVA_HOME=C:\Users\miche\.jdks\openjdk-23.0.1
-#IF NOT DEFINED JAVA_HOME SET JAVA_HOME=C:\Program Files\Java\jdk-21
+IF NOT DEFINED JAVA_HOME SET JAVA_HOME=C:\Program Files\Java\jdk-21
 
 echo Build process started
 
