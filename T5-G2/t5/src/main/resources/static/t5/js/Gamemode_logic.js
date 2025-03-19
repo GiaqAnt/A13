@@ -287,6 +287,8 @@ function updateDOMWithPreviousGameData(previousGameObject) {
 		if (previousGameObject.mode === "PartitaSingola")
 			document.getElementById("gamemode_time_limit").innerText =
 				formatTime(previousGameObject.remainingTime) || formatTime(0);
+		else
+			document.getElementById("gamemode_time_limit").innerText = "Nessun tempo limite"
 
 		const link = document.getElementById("Continua");
 

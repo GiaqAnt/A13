@@ -174,37 +174,40 @@
         function renderAchievements(selectedMode) {
             let container = document.getElementById("achievements-container");
             container.innerHTML = "";
-            let filteredAchievements = achievements.filter(a => a.game_mode === selectedMode);
-            let groupedByClassUT = groupBy(filteredAchievements, "class_ut");
+            let hasAchievements = false; // Flag per verificare se ci sono obiettivi
 
-            for (let classUT in groupedByClassUT) {
-                let classUTDiv = document.createElement("div");
-                classUTDiv.innerHTML = `<div class='class-ut'>${classUT}</div>`;
+            if (achievements && achievements.length > 0) {
+                let filteredAchievements = achievements.filter(a => a.game_mode === selectedMode);
+                let groupedByClassUT = groupBy(filteredAchievements, "class_ut");
 
-                let groupedByRobot = groupBy(groupedByClassUT[classUT], "robot_type");
+                for (let classUT in groupedByClassUT) {
+                    let classUTDiv = document.createElement("div");
+                    classUTDiv.innerHTML = `<div class='class-ut'>${classUT}</div>`;
 
-                for (let robotType in groupedByRobot) {
-                    let robotDiv = document.createElement("div");
-                    let groupedByDifficulty = groupBy(groupedByRobot[robotType], "difficulty");
+                    let groupedByRobot = groupBy(groupedByClassUT[classUT], "robot_type");
 
-                    for (let difficulty in groupedByDifficulty) {
-                        let difficultyText = difficulty === "1" ? difficultyTranslation.easy :
-                            difficulty === "2" ? difficultyTranslation.medium :
-                                difficultyTranslation.hard;
+                    for (let robotType in groupedByRobot) {
+                        let robotDiv = document.createElement("div");
+                        let groupedByDifficulty = groupBy(groupedByRobot[robotType], "difficulty");
 
-                        let difficultyTitle = document.createElement("div");
-                        difficultyTitle.classList.add("robot-difficulty");
-                        difficultyTitle.innerText = `${robotType} - ${difficultyText}`;
+                        for (let difficulty in groupedByDifficulty) {
+                            let difficultyText = difficulty === "1" ? difficultyTranslation.easy :
+                                difficulty === "2" ? difficultyTranslation.medium :
+                                    difficultyTranslation.hard;
 
-                        let achievementsContainer = document.createElement("div");
-                        achievementsContainer.classList.add("achievements-container");
+                            let difficultyTitle = document.createElement("div");
+                            difficultyTitle.classList.add("robot-difficulty");
+                            difficultyTitle.innerText = `${robotType} - ${difficultyText}`;
 
-                        groupedByDifficulty[difficulty].forEach(achievement => {
-                            if (achievement.achievements) {
-                                achievement.achievements.forEach(ach => {
-                                    let achDiv = document.createElement("div");
-                                    achDiv.classList.add("achievement-item");
-                                    achDiv.innerHTML = `
+                            let achievementsContainer = document.createElement("div");
+                            achievementsContainer.classList.add("achievements-container");
+
+                            groupedByDifficulty[difficulty].forEach(achievement => {
+                                if (achievement.achievements) {
+                                    achievement.achievements.forEach(ach => {
+                                        let achDiv = document.createElement("div");
+                                        achDiv.classList.add("achievement-item");
+                                        achDiv.innerHTML = `
                                 <img src="/images/achievements/${ach}.png"
                                      alt="${achievementData[ach]?.name || ach}">
                                 <div class="achievement-info">
@@ -212,21 +215,31 @@
                                     <p>${achievementData[ach]?.descr || ""}</p>
                                 </div>
                             `;
-                                    achievementsContainer.appendChild(achDiv);
-                                });
-                            }
-                        });
+                                        achievementsContainer.appendChild(achDiv);
+                                        hasAchievements = true; // Segnala che almeno un obiettivo è stato aggiunto
+                                    });
+                                }
+                            });
 
-                        if (achievementsContainer.children.length !== 0) {
-                            robotDiv.appendChild(difficultyTitle);
-                            robotDiv.appendChild(achievementsContainer);
+                            if (achievementsContainer.children.length !== 0) {
+                                robotDiv.appendChild(difficultyTitle);
+                                robotDiv.appendChild(achievementsContainer);
+                            }
                         }
+
+                        classUTDiv.appendChild(robotDiv);
                     }
 
-                    classUTDiv.appendChild(robotDiv);
+                    container.appendChild(classUTDiv);
                 }
+            }
 
-                container.appendChild(classUTDiv);
+            // Se non ci sono obiettivi, aggiungo il messaggio "Nessun obiettivo sbloccato"
+            if (!hasAchievements) {
+                let messageDiv = document.createElement("div");
+                messageDiv.textContent = "Nessun obiettivo sbloccato";
+                messageDiv.classList.add("text-center", "mt-3", "fw-bold");
+                container.appendChild(messageDiv);
             }
         }
 

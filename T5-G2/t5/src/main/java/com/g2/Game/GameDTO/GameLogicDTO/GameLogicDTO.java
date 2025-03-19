@@ -3,10 +3,14 @@ package com.g2.Game.GameDTO.GameLogicDTO;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.g2.Game.GameDTO.RunGameDTO.RunGameRequestDTO;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "mode", include = JsonTypeInfo.As.EXISTING_PROPERTY, visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = PartitaSingolaLogicDTO.class, name = "PartitaSingola") // Se "mode" è "PartitaSingola", usa questa classe
+        @JsonSubTypes.Type(value = PartitaSingolaLogicDTO.class, name = "PartitaSingola"), // Se "mode" è "PartitaSingola", usa questa classe
+        @JsonSubTypes.Type(value = GameLogicDTO.class, name = "Allenamento"),
+        @JsonSubTypes.Type(value = GameLogicDTO.class, name = "ScalataGame"),
+        @JsonSubTypes.Type(value = GameLogicDTO.class, name = "Sfida")
 })
 public class GameLogicDTO {
 

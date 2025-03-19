@@ -11,7 +11,10 @@ import jakarta.validation.constraints.NotNull;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "mode", include = JsonTypeInfo.As.EXISTING_PROPERTY, visible = true)
 @JsonSubTypes({
-        @JsonSubTypes.Type(value = StartPartitaSingolaRequestDTO.class, name = "PartitaSingola") // Se "mode" è "PartitaSingola", usa questa classe
+        @JsonSubTypes.Type(value = StartPartitaSingolaRequestDTO.class, name = "PartitaSingola"),// Se "mode" è "PartitaSingola", usa questa classe
+        @JsonSubTypes.Type(value = StartGameRequestDTO.class, name = "Allenamento"),
+        @JsonSubTypes.Type(value = StartGameRequestDTO.class, name = "ScalataGame"),
+        @JsonSubTypes.Type(value = StartGameRequestDTO.class, name = "Sfida")
 })
 public class StartGameRequestDTO {
 
