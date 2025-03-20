@@ -36,7 +36,7 @@ public class T4Service extends BaseService {
 
     // Costante che definisce l'URL di base per le richieste REST
     private static final String BASE_URL = "http://t4-controller:8084";
-    //private static final String BASE_URL = "http://127.0.0.1:8084";
+    // private static final String BASE_URL = "http://127.0.0.1:8084";
 
     // Costruttore della classe, inizializza il servizio con il RestTemplate e l'URL
     // di base
