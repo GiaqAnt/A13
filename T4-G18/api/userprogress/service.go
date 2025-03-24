@@ -266,6 +266,48 @@ func (ms *GameRecordStorage) UpdateAchievements(playerId Long, gameMode StringWr
 	}, nil
 }
 
+func (ms *GameRecordStorage) GetAllUserGameProgresses(playerId Long) ([]UserGameProgressResponse, error) {
+	var userGameProgressList []UserGameProgress
+
+	log.Printf("Retrieving game progress for player %d", playerId)
+
+	// Recupero tutti i progressi di gioco dell'utente
+	err := ms.db.Where("player_id = ?", playerId).Find(&userGameProgressList).Error
+	if err != nil {
+		log.Printf("Error retrieving UserGameProgress: %v", err)
+		return nil, api.MakeServiceError(err)
+	}
+
+	var responses []UserGameProgressResponse
+
+	// Itero su ciascun progresso per costruire la risposta
+	for _, userGameProgress := range userGameProgressList {
+		var gameRecord GameRecord
+		if err := ms.db.Where("id = ?", userGameProgress.GameRecordID).First(&gameRecord).Error; err != nil {
+			log.Printf("Error retrieving GameRecord for userGameProgress ID %d: %v", userGameProgress.ID, err)
+			return nil, api.MakeServiceError(err)
+		}
+
+		achievements, err := ms.GetAchievements(userGameProgress.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		responses = append(responses, UserGameProgressResponse{
+			ID:           userGameProgress.ID,
+			PlayerID:     userGameProgress.PlayerID,
+			GameMode:     gameRecord.GameMode,
+			ClassUT:      gameRecord.ClassUT,
+			RobotType:    gameRecord.RobotType,
+			Difficulty:   gameRecord.Difficulty,
+			HasWon:       userGameProgress.HasWon,
+			Achievements: achievements,
+		})
+	}
+
+	return responses, nil
+}
+
 // GetAchievements Funzione di supporto che recupera gli achievement associati a un UserGameProgress
 func (ms *GameRecordStorage) GetAchievements(progressID int64) ([]string, error) {
 	var achievements []string

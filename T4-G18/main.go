@@ -506,14 +506,16 @@ func setupRoutes(gc *game.Controller,
 	})
 
 	r.Route("/progress", func(r chi.Router) {
-		// Get match
+		// Get progress
 		r.Get("/{playerId}/{gameMode}/{classUT}/{robotType}/{difficulty}", api.HandlerFunc(uc.GetUserGameProgress))
-		// Add new match
+		// Add new progress and GameRecord if not exist
 		r.Post("/", api.HandlerFunc(uc.Create))
-		// Update match as won
+		// Update progress as GameRecord won
 		r.Put("/state/{playerId}/{gameMode}/{classUT}/{robotType}/{difficulty}", api.HandlerFunc(uc.UpdateHasWon))
-		// Update achievements for match
+		// Update achievements unlocked for GameRecord
 		r.Put("/achievements/{playerId}/{gameMode}/{classUT}/{robotType}/{difficulty}", api.HandlerFunc(uc.UpdateAchievements))
+		// Get all user progresses
+		r.Get("/{playerId}", api.HandlerFunc(uc.GetAllUserGameProgresses))
 	})
 
 	r.Route("/games", func(r chi.Router) {

@@ -10,6 +10,7 @@ type Service interface {
 	GetUserGameProgress(playerId Long, gameMode StringWrapper, classUT StringWrapper, robotType StringWrapper, difficulty StringWrapper) (UserGameProgressResponse, error)
 	UpdateHasWon(playerId Long, gameMode StringWrapper, classUT StringWrapper, robotType StringWrapper, difficulty StringWrapper, hasWon bool) (UserGameProgressResponse, error)
 	UpdateAchievements(playerId Long, gameMode StringWrapper, classUT StringWrapper, robotType StringWrapper, difficulty StringWrapper, newAchievements []string) (UserGameProgressResponse, error)
+	GetAllUserGameProgresses(playerId Long) ([]UserGameProgressResponse, error)
 }
 
 type Controller struct {
@@ -141,6 +142,20 @@ func (rc *Controller) UpdateAchievements(w http.ResponseWriter, r *http.Request)
 	}
 
 	winMatch, err := rc.service.UpdateAchievements(playerId, gameMode, classUT, robotType, difficulty, request.Achievements)
+	if err != nil {
+		return api.MakeHttpError(err)
+	}
+
+	return api.WriteJson(w, http.StatusOK, winMatch)
+}
+
+func (rc *Controller) GetAllUserGameProgresses(w http.ResponseWriter, r *http.Request) error {
+	playerId, err := api.FromUrlParams[Long](r, "playerId")
+	if err != nil {
+		return api.MakeHttpError(err)
+	}
+
+	winMatch, err := rc.service.GetAllUserGameProgresses(playerId)
 	if err != nil {
 		return api.MakeHttpError(err)
 	}
