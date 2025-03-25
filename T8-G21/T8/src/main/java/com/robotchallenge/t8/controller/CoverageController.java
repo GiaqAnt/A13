@@ -44,7 +44,7 @@ public class CoverageController {
         logger.info("[CoverageController] [POST /api/VolumeT0] Ricevuta richiesta");
         String result = coverageService.calculateStudentCoverage(request);
 
-        int[] evoSuiteStatistics = coverageService.getCoveragePercentageStatistics(result);
+        int[] evoSuiteStatistics = result != null ? coverageService.getCoveragePercentageStatistics(result) : new int[]{0, 0, 0, 0, 0, 0, 0, 0};
 
         JSONObject response = new JSONObject();
         response.put("statistics", result);

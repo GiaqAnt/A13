@@ -136,17 +136,19 @@ public class GameService {
         String testingClassName = "Test" + currentGame.getClasseUT();
         String testingClassFileName = testingClassName + ".java";
         String underTestClassFileName = underTestClassName + ".java";
+
         // Recupero il codice della classe under test
         String underTestClassCode = this.serviceManager.handleRequest("T1", "getClassUnderTest", String.class, underTestClassName);
+
         // Chiamata a T7 per calcolare jacoco coverage
         String responseT7Raw = this.serviceManager.handleRequest("T7", "CompileCoverage", String.class, testingClassFileName, testingClassCode, underTestClassFileName, underTestClassCode);
+        JSONObject response_T7 = new JSONObject(responseT7Raw);
 
         // Chiamata a T8 per calcolare evosuite coverage
         String responseT8Raw = this.serviceManager.handleRequest("T8", "evosuiteUserCoverage", String.class,
                 testingClassName, testingClassCode, underTestClassName, underTestClassCode, "");
-
         JSONObject response_T8 = new JSONObject(responseT8Raw);
-        JSONObject response_T7 = new JSONObject(responseT7Raw);
+
 
         // Salvo in VolumeT0 testingClassCode, response_T8 (csv) e response_T7 (xml)
         String userDir = String.format("/VolumeT0/FolderTree/StudentTest/Player%s/%s/%s/Game%s/Round%s/Turn%s",
@@ -281,7 +283,7 @@ public class GameService {
     }
 
     public void EndGame(GameLogic currentGame, int userscore) {
-        logger.info("endGame: Terminazione partita per playerId={}.", currentGame.getPlayerID());
+        logger.info("EndGame: Terminazione partita per playerId={}.", currentGame.getPlayerID());
         /*
         *       L'utente ha deciso di terminare la partita o 
         *       la modalità di gioco ha determianto il termine
@@ -299,19 +301,5 @@ public class GameService {
         String email = user.getEmail();
         List<AchievementProgress> newAchievements = achievementService.updateProgressByPlayer(user.getId().intValue());
         achievementService.updateNotificationsForAchievements(email, newAchievements);
-    }
-
-    private void updateExperiencePoints(GameLogic currentGame) {
-        UserGameProgress robotBeaten = serviceManager.handleRequest("T4", "checkIfAlreadyWon", UserGameProgress.class,
-                currentGame.getPlayerID(), currentGame.getClasseUT(), currentGame.getTypeRobot(), currentGame.getDifficulty());
-
-        if (robotBeaten == null)
-            return;
-
-        serviceManager.handleRequest("T4", "addNewWonMatch", UserGameProgress.class,
-                currentGame.getPlayerID(), currentGame.getClasseUT(), currentGame.getTypeRobot(), currentGame.getDifficulty());
-
-        serviceManager.handleRequest("T4", "updateUserExperiencePoints", Experience.class, currentGame.getPlayerID(),
-                currentGame.getDifficulty());
     }
 }

@@ -91,9 +91,9 @@ public class CoverageService {
         try {
             FileOperationUtil.deleteDirectoryRecursively(baseCwd_Path);
             return result;
-        } catch (IOException | NullPointerException e) {
-            logger.error("[calculateStudentCoverage] Errore durante la copia dei sorgenti in VolumeT0: ", e);
-            throw new RuntimeException("[calculateStudentCoverage] Errore durante la copia dei sorgenti in VolumeT0: " + e);
+        } catch (IOException e) {
+            logger.error("[calculateStudentCoverage] Errore durante la fase di cleanup: ", e);
+            throw new RuntimeException("[calculateStudentCoverage] Errore durante la fase di cleanup: " + e);
         }
     }
 
@@ -154,7 +154,8 @@ public class CoverageService {
             return coverage.collect(Collectors.joining("\n"));
         } catch (IOException e) {
             logger.error("[calculateEvosuiteCoverage] Errore durante la lettura di statistics.csv: ", e);
-            throw new RuntimeException("[calculateEvosuiteCoverage] Errore durante la lettura di statistics.csv: " + e);
+            //throw new RuntimeException("[calculateEvosuiteCoverage] Errore durante la lettura di statistics.csv: " + e);
+            return null;
         }
     }
 
