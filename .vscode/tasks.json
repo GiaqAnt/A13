@@ -46,7 +46,7 @@
         {
             "label": "compile & docker api_gateway",
             "type": "shell",
-            "command": "cd api_gateway; mvn package; docker image prune -f; docker compose up -d --build"
+            "command": "cd apiGateway; mvn package; docker image prune -f; docker compose up -d --build"
         },
         {
             "label": "docker ui_gateway",
