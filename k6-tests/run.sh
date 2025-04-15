@@ -1,0 +1,1 @@
+k6 run --out influxdb=http://localhost:9090/k6db T5_tests.js
