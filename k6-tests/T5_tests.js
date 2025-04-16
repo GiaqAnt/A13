@@ -59,7 +59,7 @@ export const options = {
     scenarios: {
         gradual_test: {
             executor: 'per-vu-iterations',
-            vus: 1,
+            vus: 50,
             iterations: 1,
             maxDuration: '90m',
         },
@@ -263,7 +263,7 @@ function runGame(playerId, jwt, email) {
             lang: 'en',
             jwt: jwt,
         },
-        timeout: '300s'
+        timeout: '600s'
     };
 
     let runRes = http.post('http://localhost/run', runPayload, runHeader);
