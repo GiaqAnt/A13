@@ -56,25 +56,28 @@ public class T7Service extends BaseService {
             String underTestClassName, String underTestClassCode) {
         final String endpoint = "/compile-and-codecoverage"; // Definisce l'endpoint per l'API di compilazione e analisi
         // della copertura del codice
-        try{
-            // Creazione del json con i parametri della richiesta POST
-            JSONObject obj = new JSONObject();
-            obj.put("testingClassName", testingClassName);
-            obj.put("testingClassCode", testingClassCode);
-            obj.put("underTestClassName", underTestClassName);
-            obj.put("underTestClassCode", underTestClassCode);
 
-            Map<String, String> customHeaders = new HashMap<>();
-            customHeaders.put("Content-Type", "application/json");
-            String respose = callRestPost(endpoint, obj, null, customHeaders,String.class);
-            return respose;
-        } catch (RestClientException e) {
+        // Creazione del json con i parametri della richiesta POST
+        JSONObject obj = new JSONObject();
+        obj.put("testingClassName", testingClassName);
+        obj.put("testingClassCode", testingClassCode);
+        obj.put("underTestClassName", underTestClassName);
+        obj.put("underTestClassCode", underTestClassCode);
+
+        Map<String, String> customHeaders = new HashMap<>();
+        customHeaders.put("Content-Type", "application/json");
+        return callRestPost(endpoint, obj, null, customHeaders,String.class);
+
+        /*
+        catch (RestClientException e) {
             // Gestione degli errori durante la chiamata
             // Gestione delle eccezioni in caso di errore nella chiamata REST
             throw new IllegalArgumentException("Errore durante la chiamata POST: " + e.getMessage());
         } catch (Exception e) {
             throw new IllegalArgumentException("Errore durante la chiamata POST: " + e.getMessage());
         }
+
+         */
     }
 
 }

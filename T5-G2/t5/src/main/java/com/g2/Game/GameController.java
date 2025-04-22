@@ -41,6 +41,9 @@ import com.g2.Game.GameModes.GameLogic;
 import com.g2.Game.Service.GameServiceManager;
 import com.g2.Session.Exceptions.GameModeAlreadyExist;
 import com.g2.Session.Exceptions.GameModeDontExist;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 
 //Qui introduco tutte le chiamate REST per la logica di gioco/editor
 @CrossOrigin
@@ -141,6 +144,25 @@ public class GameController {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
+
+    @ExceptionHandler(RestClientException.class)
+    public ResponseEntity<Map<String, String>> handleRuntimeException(RestClientException ex) {
+        Map<String, String> errorResponse = new HashMap<>();
+
+        errorResponse.put("error", ex.getMessage());
+
+        StackTraceElement relevantStackTrace = ex.getStackTrace()[0];
+        errorResponse.put("cause", relevantStackTrace.toString());
+
+        int httpStatusCode = HttpStatus.INTERNAL_SERVER_ERROR.value();
+
+        if (ex.getCause() instanceof HttpStatusCodeException cause) {
+            httpStatusCode = cause.getStatusCode().value();
+        }
+
+        return ResponseEntity.status(httpStatusCode).body(errorResponse);
+    }
+
 
     /*
      *  Chiamata principale del game engine, l'utente ogni volta può comunicare la sua richiesta di
