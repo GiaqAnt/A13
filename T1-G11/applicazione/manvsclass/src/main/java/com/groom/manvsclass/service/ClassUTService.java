@@ -201,8 +201,8 @@ public class ClassUTService {
             return file;
         }
         catch(Exception e){
-            System.out.println("Eccezione------------");
-            return new ResponseEntity<>("Cartella non trovata.", HttpStatus.NOT_FOUND);
+            System.out.println("Classe UT non trovata");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("ClasseUT " + name + " non trovata");
         }
     }
 
