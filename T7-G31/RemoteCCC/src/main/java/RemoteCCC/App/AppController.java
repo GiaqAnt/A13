@@ -17,9 +17,9 @@
 package RemoteCCC.App;
 
 import java.io.IOException;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.*;
 
+import RemoteCCC.App.config.CustomExecutorConfiguration;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -39,17 +39,15 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 public class AppController {
 
-    @Autowired
-    @Qualifier("compileExecutor")
-    private ThreadPoolTaskExecutor compileExecutor;
-
-    protected static final Logger logger = LoggerFactory.getLogger(CompilationService.class);
+    protected static final Logger logger = LoggerFactory.getLogger(AppController.class);
 
     @Value("${variabile.mvn}")
     private String mvn_path;
 
-    @Autowired
-    public AppController() {
+    private final CustomExecutorConfiguration.CustomExecutorService compileExecutor;
+
+    public AppController(CustomExecutorConfiguration.CustomExecutorService compileExecutor) {
+        this.compileExecutor = compileExecutor;
     }
 
     /**
@@ -64,32 +62,54 @@ public class AppController {
      */
     @PostMapping(value = "/compile-and-codecoverage", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> compileAndTest(@RequestBody RequestDTO request) throws IOException, InterruptedException {
-        try {
-            CompilationService compilationService = new CompilationService(request.getTestingClassName(),
-                        request.getTestingClassCode(),
-                        request.getUnderTestClassName(),
-                        request.getUnderTestClassCode(),
-                        mvn_path);
+        Callable<JSONObject> compilationTimedTask = () -> {
+            CompilationService compilationService = new CompilationService(
+                    request.getTestingClassName(),
+                    request.getTestingClassCode(),
+                    request.getUnderTestClassName(),
+                    request.getUnderTestClassCode(),
+                    mvn_path
+            );
 
-            Future<?> future = compileExecutor.submit(() -> {
-                try {
-                    compilationService.compileAndTest();
-                } catch (IOException | InterruptedException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-            // Blocco finchè il servizio di compilazione non termina
-            future.get();
+            compilationService.compileAndTest();
 
             JSONObject result = new JSONObject();
             result.put("outCompile", compilationService.outputMaven);
             result.put("coverage", compilationService.Coverage);
             result.put("error", compilationService.Errors);
-            return ResponseEntity.status(HttpStatus.OK).header("Content-Type", "application/json").body(result.toString()); // Imposta l'intestazione Content-Type
-        } catch (RuntimeException | ExecutionException e) {
-            logger.error("[Compile-and-codecoverage]", e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.toString());
+            return result;
+        };
+
+        Future<JSONObject> future;
+        try {
+            future = compileExecutor.submitTask(compilationTimedTask);
+        } catch (RejectedExecutionException e) {
+            logger.warn("[CoverageController] Task rifiutato: sistema sovraccarico: {}", e.getStackTrace()[0]);
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body("Il sistema è temporaneamente sovraccarico. Riprova più tardi.");
+        }
+
+        try {
+            JSONObject result = future.get();
+            return ResponseEntity.status(HttpStatus.OK)
+                    .header("Content-Type", "application/json")
+                    .body(result.toString());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            logger.error("[CoverageController] Il processo è stato interrotto: {}", e.getStackTrace()[0]);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Il processo è stato interrotto.");
+        } catch (ExecutionException e) {
+            Throwable cause = e.getCause();
+            if (cause instanceof TimeoutException) {
+                logger.warn("[CoverageController] Timeout: il task ha impiegato troppo tempo: {}", e.getStackTrace()[0]);
+                return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                        .body("Il task ha superato il tempo massimo disponibile.");
+            } else {
+                logger.error("[CoverageController] Errore interno durante l'esecuzione: ", e);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Errore durante la compilazione o l'esecuzione.");
+            }
         }
     }
 
