@@ -23,8 +23,8 @@ echo 3 - T4-G18
 echo 4 - T5-G2
 echo 5 - T7-G31
 echo 6 - T8-G21
-echo 8 - ui_gateway
-echo 9 - api_gateway
+echo 7 - ui_gateway
+echo 8 - api_gateway
 echo 9 - T0
 set /p SELECTION=Scelte (es. 0 1 2 o 'all'):
 

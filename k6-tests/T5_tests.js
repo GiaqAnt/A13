@@ -4,6 +4,8 @@ import { check, group, sleep } from 'k6';
 import {parseJwt} from "./util.js";
 import { scenario } from 'k6/execution';
 
+const ENDPOINT = "https://c0c7-143-225-28-157.ngrok-free.app"
+
 // Load data from file
 const users = JSON.parse(open('./users.json'));
 const code = [
@@ -60,8 +62,8 @@ export const options = {
         gradual_test: {
             executor: 'per-vu-iterations',
             vus: 50,
-            iterations: 1,
-            maxDuration: '90m',
+            iterations: 5,
+            maxDuration: '120m',
         },
     },
 };
@@ -110,7 +112,7 @@ function startGame() {
         redirects: 0,
     };
 
-    let resLogin = http.post('http://localhost/login', loginPayload, loginHeader);
+    let resLogin = http.post(`${ENDPOINT}/login`, loginPayload, loginHeader);
 
     let loginSuccess = check(resLogin, {
         'Login avvenuto con successo': (r) => r.status === 200 || r.status === 302,
@@ -147,7 +149,7 @@ function startGame() {
         },
     };
 
-    let resMain = http.get(`http://localhost/main`, null, mainHeader);
+    let resMain = http.get(`${ENDPOINT}/main`, null, mainHeader);
 
     if (resMain.status <= 299) {
         console.log(`Access main succeeded, session created`);
@@ -161,7 +163,7 @@ function startGame() {
         "Content-Type": "application/json",
     };
 
-    let resGameMode = http.get(`http://localhost/session/gamemode/${playerId}?mode=PartitaSingola`, null, gameModeHeader);
+    let resGameMode = http.get(`${ENDPOINT}/session/gamemode/${playerId}?mode=PartitaSingola`, null, gameModeHeader);
 
     if (resGameMode.status <= 299) {
         console.error(`There is a previous game for user ${email} - ${playerId}`);
@@ -201,7 +203,7 @@ function startGame() {
         },
     };
 
-    let startGameRes = http.post('http://localhost/StartGame', startGamePayload, startGameHeader);
+    let startGameRes = http.post(`${ENDPOINT}/StartGame`, startGamePayload, startGameHeader);
 
     if (startGameRes.status > 299) {
         console.error(`Errore StartGame per ${email}:`, startGameRes.body);
@@ -266,7 +268,7 @@ function runGame(playerId, jwt, email) {
         timeout: '600s'
     };
 
-    let runRes = http.post('http://localhost/run', runPayload, runHeader);
+    let runRes = http.post(`${ENDPOINT}/run`, runPayload, runHeader);
 
     try {
         const runBody = JSON.parse(runRes.body);
@@ -329,7 +331,7 @@ function endGame(playerId, jwt, email, canWin) {
         remainingTime: 1,
     });
 
-    let runRes = http.post('http://localhost/EndGame', runPayload, runHeader);
+    let runRes = http.post(`${ENDPOINT}/EndGame`, runPayload, runHeader);
 
     const endBody = JSON.parse(runRes.body);
     console.log(endBody);
@@ -346,3 +348,4 @@ function endGame(playerId, jwt, email, canWin) {
 
     sleep(Math.random() * 9 + 1);
 }
+

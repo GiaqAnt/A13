@@ -94,27 +94,28 @@ public abstract class BaseService implements ServiceInterface {
     /*
      * Mi serve per non ripetere i controlli sul try catch
      */
-    private <R> R executeRestCall(String caller, RestCall<R> call) {
+    private <R> R executeRestCall(String caller, RestCall<R> call) throws HttpClientErrorException, HttpServerErrorException {
         try {
             return call.execute();
         } catch (HttpClientErrorException e) { // Gestisce gli errori 4xx
             throw new RestClientException("Chiamata REST fallita con stato 4xx: " + e.getStatusCode()
-                    + " (eseguita da: " + caller + ")", e);
+                    + " (eseguita da: " + caller + ") con errore " + e.getMessage(), e);
         } catch (HttpServerErrorException e) { // Gestisce gli errori 5xx
             throw new RestClientException("Chiamata REST fallita con stato 5xx: " + e.getStatusCode()
-                    + " (eseguita da: " + caller + ")", e);
+                    + " (eseguita da: " + caller + ") con errore " + e.getMessage(), e);
         } catch (RestClientException e) { // Altri tipi di errori di RestClient
             throw new RestClientException("Chiamata REST fallita: " + e.getMessage()
-                    + " (eseguita da: " + caller + ")", e);
+                    + " (eseguita da: " + caller + ") con errore " + e.getMessage(), e);
         } catch (IllegalArgumentException e) { // Errori dovuti a parametri non validi
             throw new RuntimeException("Chiamata REST fallita: " + e.getMessage()
-                    + " (eseguita da: " + caller + ")", e);
+                    + " (eseguita da: " + caller + ") con errore " + e.getMessage(), e);
         }
+
     }
 
     // Metodo per chiamate GET che restituiscono un singolo oggetto
     protected <R> R callRestGET(String endpoint, Map<String, String> queryParams, Class<R> responseType) {
-        return executeRestCall("callRestGET", () -> {
+        return executeRestCall("callRestGET " + endpoint, () -> {
             String url = buildUri(endpoint, queryParams);
             ResponseEntity<R> response = restTemplate.getForEntity(url, responseType);
             return response.getBody();
@@ -123,7 +124,7 @@ public abstract class BaseService implements ServiceInterface {
 
     // Metodo per chiamate GET che restituiscono una lista di oggetti
     protected <R> List<R> callRestGET(String endpoint, Map<String, String> queryParams, ParameterizedTypeReference<List<R>> responseType) {
-        return executeRestCall("callRestGET", () -> {
+        return executeRestCall("callRestGET " + endpoint, () -> {
             String url = buildUri(endpoint, queryParams);
             ResponseEntity<List<R>> response = restTemplate.exchange(url, HttpMethod.GET, null, responseType);
             return response.getBody();
@@ -143,7 +144,7 @@ public abstract class BaseService implements ServiceInterface {
         if (formData == null) {
             throw new IllegalArgumentException("formData non può essere nullo");
         }
-        return executeRestCall("callRestPost", () -> {
+        return executeRestCall("callRestPost " + endpoint, () -> {
             String url = UriBuilderHelper.buildUri(baseUrl, endpoint, queryParams);
             HttpHeaders headers = HttpHeadersFactory.createHeaders(customHeaders, MediaType.APPLICATION_FORM_URLENCODED);
             HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(formData, headers);
@@ -159,7 +160,7 @@ public abstract class BaseService implements ServiceInterface {
         if (jsonObject == null) {
             throw new IllegalArgumentException("Il body JSON non può essere nullo");
         }
-        return executeRestCall("callRestPost", () -> {
+        return executeRestCall("callRestPost " + endpoint, () -> {
             String jsonBody = jsonObject.toString();
             String url = buildUri(endpoint, queryParams);
             HttpHeaders headers = buildHeaders(customHeaders, MediaType.APPLICATION_JSON);
@@ -186,7 +187,7 @@ public abstract class BaseService implements ServiceInterface {
             throw new IllegalArgumentException("formData non può essere nullo");
         }
 
-        return executeRestCall("callRestPut", () -> {
+        return executeRestCall("callRestPut " + endpoint, () -> {
             String url = buildUri(endpoint, queryParams);
             HttpHeaders headers = buildHeaders(customHeaders, MediaType.APPLICATION_FORM_URLENCODED);
             HttpEntity<MultiValueMap<String, String>> requestEntity = new HttpEntity<>(formData, headers);
@@ -206,7 +207,7 @@ public abstract class BaseService implements ServiceInterface {
             throw new IllegalArgumentException("Il body JSON non può essere nullo");
         }
 
-        return executeRestCall("callRestPut", () -> {
+        return executeRestCall("callRestPut " + endpoint, () -> {
             String url = buildUri(endpoint, queryParams);
             String jsonBody = jsonObject.toString();
 
@@ -224,7 +225,7 @@ public abstract class BaseService implements ServiceInterface {
 
     // Metodo per chiamate DELETE
     protected String callRestDelete(String endpoint, Map<String, String> queryParams) {
-        return executeRestCall("callRestDelete", () -> {
+        return executeRestCall("callRestDelete " + endpoint, () -> {
             String url = buildUri(endpoint, queryParams);
             ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.DELETE, null, String.class);
             return response.getBody();

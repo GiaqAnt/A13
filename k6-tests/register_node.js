@@ -16,7 +16,8 @@ function randomString(length) {
 
 const successfulUsers = [];
 const TOTAL_USERS = 80;
-const REGISTER_URL = 'http://localhost/register';
+const ENDPOINT = "https://c0c7-143-225-28-157.ngrok-free.app"
+const REGISTER_URL = `${ENDPOINT}/register`;
 
 async function registerUser() {
     const randomSleepTime = Math.floor(Math.random() * 5) + 1;
