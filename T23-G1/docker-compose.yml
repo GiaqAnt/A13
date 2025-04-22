@@ -21,10 +21,14 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}  # Usa la variabile per la password di root
       MYSQL_DATABASE: ${MYSQL_DATABASE}  # Usa il nome del database
+      MYSQL_USER: root  # Nome dell'utente da creare
+      MYSQL_USER_PASSWORD: password  # Password per l'utente
+    volumes:
+      - ./mysql_init/init.sql:/docker-entrypoint-initdb.d/init.sql  # Monta lo script SQL
     ports:
       - "3306:3306"
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "root", "-p password"]
       interval: 30s
       timeout: 20s
       retries: 5

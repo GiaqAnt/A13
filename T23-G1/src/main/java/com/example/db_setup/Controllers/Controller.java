@@ -230,12 +230,15 @@ public class Controller {
          * invio impedisca il redirect e restituisca un errore di registrazione. Inoltre Gmail prevede un numero max di
          * mail inviate per giorno, superato il limite Get /login restituirebbe sempre errore.
          */
+        /*
         try {
             emailService.sendMailRegister(email, ID);
         } catch (MessagingException e) {
             System.out.println("[POST /register] Errore nell'invio della mail di conferma registrazione: " + e.getMessage());
             // return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to confirm your registration");
         }
+
+         */
 
         HttpHeaders headers = new HttpHeaders();
         headers.add("Location", "/login_success");
