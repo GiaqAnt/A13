@@ -7,8 +7,6 @@ echo "Deployment started"
 export JAVA_HOME=${JAVA_HOME:-"/usr/lib/jvm/java-21-openjdk-amd64"}
 
 # Creazione dei volumi Docker se non esistono
-docker volume create VolumeT9 || echo "VolumeT9 already exists"
-docker volume create VolumeT8 || echo "VolumeT8 already exists"
 docker volume create VolumeT0 || echo "VolumeT0 already exists"
 docker volume create logs || echo "logs already exists"
 
@@ -56,12 +54,18 @@ cd "$ROOT_DIR"
 
 echo "Deploying api_gateway"
 cd "$ROOT_DIR/apiGateway"
-docker compose up -d || { echo "Error deploying api_gateway"; exit 1; }
+docker compose up -d || { echo "Error deploying apiGateway"; exit 1; }
 cd "$ROOT_DIR"
 
 echo "Deploying T0"
 cd "$ROOT_DIR/T0"
-docker compose up -d || { echo "Error deploying api_gateway"; exit 1; }
+docker compose up -d || { echo "Error deploying T0"; exit 1; }
+cd "$ROOT_DIR"
+
+# Build T0
+echo "Deploying db-backup"
+cd "$ROOT_DIR/db-backup"
+docker compose up -d || { echo "Error deploying db-backup"; exit 1; }
 cd "$ROOT_DIR"
 
 # Avvio script di configurazione finale

@@ -7,8 +7,6 @@ set JAVA_HOME=%JAVA_HOME%
 if "%JAVA_HOME%"=="" set JAVA_HOME=C:\Program Files\Java\jdk-21
 
 rem Creazione dei volumi Docker se non esistono
-docker volume create VolumeT9 || echo VolumeT9 already exists
-docker volume create VolumeT8 || echo VolumeT8 already exists
 docker volume create VolumeT0 || echo VolumeT0 already exists
 docker volume create logs || echo logs already exists
 
@@ -90,11 +88,20 @@ if %ERRORLEVEL% neq 0 (
 )
 cd /d "%ROOT_DIR%"
 
-echo Deploying api_gateway
+echo Deploying T0
 cd /d "%ROOT_DIR%\T0"
 docker compose up -d
 if %ERRORLEVEL% neq 0 (
     echo Error deploying T0
+    exit /b 1
+)
+cd /d "%ROOT_DIR%"
+
+echo Deploying db-backup
+cd /d "%ROOT_DIR%\db-backup"
+docker compose up -d
+if %ERRORLEVEL% neq 0 (
+    echo Error deploying db-backup
     exit /b 1
 )
 cd /d "%ROOT_DIR%"
