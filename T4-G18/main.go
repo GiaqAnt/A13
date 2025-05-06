@@ -272,21 +272,25 @@ func run(ctx context.Context, c Configuration) error {
 	})
 
 	/*
-	*	Ogni c.CleanupInterval, esegue una pulizia del database.
+	 *	Ogni c.CleanupInterval, esegue una pulizia del database.
+	 *  Il clenaup è stato commentato per verificare se è questo a generare il drop del db postgres
 	 */
-	g.Go(func() error {
-		for {
-			select {
-			case <-time.After(c.CleanupInterval):
-				_, err := cleanup(db)
-				if err != nil {
-					log.Print(err)
+	/*
+		g.Go(func() error {
+			for {
+				select {
+				case <-time.After(c.CleanupInterval):
+					_, err := cleanup(db)
+					if err != nil {
+						log.Print(err)
+					}
+				case <-ctx.Done():
+					return nil
 				}
-			case <-ctx.Done():
-				return nil
 			}
-		}
-	})
+		})
+
+	*/
 
 	/*
 	*	Se il rate limiting è attivo, pulisce periodicamente gli utenti bloccati.
@@ -369,14 +373,19 @@ func startHttpServer(ctx context.Context, r chi.Router, addr string) error {
 }
 
 /*
-*	La funzione cleanup gestisce un'operazione di pulizia nel database e nel filesystem
+ * La funzione cleanup gestisce un'operazione di pulizia nel database e nel filesystem
+ *
+ * Il db postgres dopo tempo indefinito viene cancellato, l'utilizzo della funzione è stato commentato per verificare se
+ * l'errore deriva da qui. In ogni caso, il cleanup fallisce perché manca la clausola WHERE nella query
  */
+
 func cleanup(db *gorm.DB) (int64, error) {
 	/*
 	*	metadata: una slice che contiene i record della tabella Metadata, estratti dal database.
 	*	err: una variabile che memorizza eventuali errori che si verificano durante l'esecuzione.
 	*   n: una variabile che memorizza il numero di record trovati nel database.
 	 */
+
 	var (
 		metadata []model.Metadata
 		err      error
@@ -390,12 +399,14 @@ func cleanup(db *gorm.DB) (int64, error) {
 	*	tutte le modifiche al database vengono annullate
 	*
 	 */
+
 	err = db.Transaction(func(tx *gorm.DB) error {
 		/*
 		*	seleziona tutti i record dalla tabella Metadata che hanno un campo turn_id NULL.
 		*	Find(&metadata): esegue la query e memorizza i risultati nella variabile metadata.
 		*	Count(&n): conta il numero di record trovati e memorizza il conteggio in n.
 		 */
+
 		err := tx.
 			Where("turn_id IS NULL").
 			Find(&metadata).
@@ -414,6 +425,7 @@ func cleanup(db *gorm.DB) (int64, error) {
 		*	Se c'è un altro tipo di errore durante la rimozione del file, viene stampato nel log.
 		*	Se l'eliminazione del file ha successo, l'ID del record viene aggiunto alla lista deleted.
 		 */
+
 		var deleted []int64
 		for _, m := range metadata {
 			if err := os.Remove(m.Path); err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -426,6 +438,7 @@ func cleanup(db *gorm.DB) (int64, error) {
 		*	Una volta che i file sono stati eliminati,
 		*	la transazione elimina i record dalla tabella Metadata che hanno gli ID presenti nella lista deleted.
 		 */
+
 		return tx.Delete(&[]model.Metadata{}, deleted).Error
 	})
 
