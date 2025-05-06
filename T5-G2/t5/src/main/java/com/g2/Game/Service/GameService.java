@@ -156,9 +156,7 @@ public class GameService {
         }
 
         // Salvo in VolumeT0 testingClassCode, response_T8 (csv) e response_T7 (xml)
-        String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmssSSS"));
-        int randomFourDigits = ThreadLocalRandom.current().nextInt(1000, 10000); // 1000 (incluso) e 10000 (escluso)
-        String suffix = timestamp + "-" + randomFourDigits;
+        String suffix = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
 
         String userDir = String.format("/VolumeT0/FolderTree/StudentTest/Player%s/%s/%s/%s/Game%s/Round%s/Turn%s",
                 currentGame.getPlayerID(), currentGame.getMode(), currentGame.getClasseUT(), suffix, currentGame.getGameID(), currentGame.getRoundID(), currentGame.getTurnID());

@@ -56,16 +56,10 @@ function getConsoleTextRun(userCoverageDetails, robotCoverageDetails, canWin, ga
 		let userPercentage = roundToTwoDecimals(user.covered / (user.covered + user.missed) * 100);
 		let robotPercentage = roundToTwoDecimals(robot.covered / (robot.covered + robot.missed) * 100);
 
-		let translated_label = label
-		if (label === "Line")
-			translated_label = terminalMessages.lines;
-		else if (label === "instruction")
-			translated_label = terminalMessages.instructions;
-
 		return (
-			`${terminalMessages.coverage_capitalized} ${translated_label} COV%: ${userPercentage}% LOC\n` +
+			`${terminalMessages.coverage_capitalized} ${label} COV%: ${userPercentage}% LOC\n` +
 			`${terminalMessages.covered}: ${user.covered}  ${terminalMessages.missed}: ${user.missed}\n` +
-			`Robot ${terminalMessages.coverage_capitalized} ${translated_label} COV%: ${robotPercentage}% LOC\n` +
+			`Robot ${terminalMessages.coverage_capitalized} ${label} COV%: ${robotPercentage}% LOC\n` +
 			`${terminalMessages.covered}: ${robot.covered} ${terminalMessages.missed}: ${robot.missed}\n` +
 			(isLast ? "" : `----------------------------------------------------------------------\n`)
 		);
@@ -225,22 +219,41 @@ function highlightCodeCoverage(reportContent, robotContent, editor) {
 		else uncoveredLinesRobot.push(line.getAttribute("nr"));
 	});
 
+	let decreaseRobotLines = 1;
+	const packages = robotContent.querySelectorAll("package");
+
+	for (const line of packages) {
+		if (line.getAttribute("name") !== "") {
+			decreaseRobotLines = 2;
+			break; 
+		} else if (line.getAttribute("name") === "Calcolatrice") {
+			decreaseRobotLines = 2;
+			break;
+		}
+	}
+
+
+	console.log(packages);
+	console.log("decreaseRobotLines: ", decreaseRobotLines);
+
 	coveredLinesRobot.forEach(function (lineNumber) {
-		editor.removeLineClass(lineNumber - 2, "gutter", "bg-danger");
-		editor.removeLineClass(lineNumber - 2, "gutter", "bg-warning");
-		editor.addLineClass	(lineNumber - 2, "gutter", "  bg-success");
+		console.log("lineNumber", lineNumber);
+		console.log("lineNumber -- ", lineNumber - decreaseRobotLines);
+		editor.removeLineClass(lineNumber - decreaseRobotLines, "gutter", "bg-danger");
+		editor.removeLineClass(lineNumber - decreaseRobotLines, "gutter", "bg-warning");
+		editor.addLineClass	(lineNumber - decreaseRobotLines, "gutter", "  bg-success");
 	});
 
 	uncoveredLinesRobot.forEach(function (lineNumber) {
-		editor.removeLineClass(lineNumber - 2, "gutter", "bg-warning");
-		editor.removeLineClass(lineNumber - 2, "gutter", "bg-success");
-		editor.addLineClass	(lineNumber - 2, "gutter", "bg-danger");
+		editor.removeLineClass(lineNumber - decreaseRobotLines, "gutter", "bg-warning");
+		editor.removeLineClass(lineNumber - decreaseRobotLines, "gutter", "bg-success");
+		editor.addLineClass	(lineNumber - decreaseRobotLines, "gutter", "bg-danger");
 	});
 
 	partiallyCoveredLinesRobot.forEach(function (lineNumber) {
-		editor.removeLineClass(lineNumber - 2, "gutter", "bg-danger");
-		editor.removeLineClass(lineNumber - 2, "gutter", "bg-success");
-		editor.addLineClass	(lineNumber - 2, "gutter", "bg-warning");
+		editor.removeLineClass(lineNumber - decreaseRobotLines, "gutter", "bg-danger");
+		editor.removeLineClass(lineNumber - decreaseRobotLines, "gutter", "bg-success");
+		editor.addLineClass	(lineNumber - decreaseRobotLines, "gutter", "bg-warning");
 	});
 
 	coveredLines.forEach(function (lineNumber) {
@@ -250,6 +263,8 @@ function highlightCodeCoverage(reportContent, robotContent, editor) {
 	});
 
 	uncoveredLines.forEach(function (lineNumber) {
+		console.log("lineNumber", lineNumber);
+		console.log("lineNumber -- ", lineNumber - 3);
 		editor.removeLineClass(lineNumber - 3, "background", "bg-coverage-warning");
 		editor.removeLineClass(lineNumber - 3, "background", "bg-coverage-success");
 		editor.addLineClass	(lineNumber - 3, "background", "bg-coverage-danger");
