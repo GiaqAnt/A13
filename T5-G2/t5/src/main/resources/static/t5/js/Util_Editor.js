@@ -115,11 +115,16 @@ function getConsoleTextRun(userCoverageDetails, robotCoverageDetails, canWin, ga
 		return `    ${label.padEnd(14)} | ${userStr.padStart(21)} | ${robotStr.padStart(21)}`;
 	}
 
+	const userInstructionCov = roundToTwoDecimals(userCoverageDetails.jacoco_instruction.covered / (userCoverageDetails.jacoco_instruction.covered + userCoverageDetails.jacoco_instruction.missed) * 100);
+	const robotInstructionCov = roundToTwoDecimals(robotCoverageDetails.jacoco_instruction.covered / (robotCoverageDetails.jacoco_instruction.covered + robotCoverageDetails.jacoco_instruction.missed) * 100);
+
 	let result =
-		'    ' + '═'.repeat(maxLineLength) + '\n' +
-		wrapAtSpaces(terminalMessages.points_descr) + '\n' +
-		'    ' + '═'.repeat(maxLineLength) + '\n\n\n' +
-		wrapAtSpaces(canWin ? terminalMessages.you_can_win : terminalMessages.you_cant_win) + '\n\n\n\n';
+	wrapAtSpaces(terminalMessages.points_descr) + "\n\n\n" +
+	'    ' + '═'.repeat(maxLineLength) + '\n' +
+	`    : ${userInstructionCov}% LOC\n` +
+	`    : ${robotInstructionCov}% LOC\n` +
+	'    ' + '═'.repeat(maxLineLength) + '\n\n\n' +
+	wrapAtSpaces(canWin ? terminalMessages.you_can_win : terminalMessages.you_cant_win) + '\n\n\n\n';
 
 	const header =
 		`    ${centerText(terminalMessages.metrics, 14)} |` +
