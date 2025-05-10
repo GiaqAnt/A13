@@ -121,8 +121,8 @@ function getConsoleTextRun(userCoverageDetails, robotCoverageDetails, canWin, ga
 	let result =
 	wrapAtSpaces(terminalMessages.points_descr) + "\n\n\n" +
 	'    ' + '═'.repeat(maxLineLength) + '\n' +
-	`    : ${userInstructionCov}% LOC\n` +
-	`    : ${robotInstructionCov}% LOC\n` +
+	`    ${terminalMessages.your_instruction_coverage}: ${userInstructionCov}% LOC\n` +
+	`    ${terminalMessages.robot_instruction_coverage}: ${robotInstructionCov}% LOC\n` +
 	'    ' + '═'.repeat(maxLineLength) + '\n\n\n' +
 	wrapAtSpaces(canWin ? terminalMessages.you_can_win : terminalMessages.you_cant_win) + '\n\n\n\n';
 
