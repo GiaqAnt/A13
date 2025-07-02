@@ -51,7 +51,7 @@ ______ _____  _____   ____   _____
 '════════════════════════════════════════════════════════════════════════\n\n\n' +
  + '\n\n\n';
 
-function getConsoleTextRun(userCoverageDetails, robotCoverageDetails, canWin, gameScore, robotScore) {
+function getConsoleTextRun(userCoverageDetails, robotCoverageDetails, canWin, userScore, robotScore, isGameEnd) {
 	const maxLineLength = 62; // Ridotto per accomodare 4 spazi laterali
 
 	function wrapAtSpaces(str) {
@@ -143,16 +143,19 @@ function getConsoleTextRun(userCoverageDetails, robotCoverageDetails, canWin, ga
 		formatJacocoRow('Branch', userCoverageDetails.jacoco_branch, robotCoverageDetails.jacoco_branch) + '\n\n\n\n';
 
 	// EvoSuite
-	result +=
-		'    ' + '─'.repeat(maxLineLength) + '\n' +
-		`    ${centerText(terminalMessages.evosuite_table_title, maxLineLength)}\n` +
-		'    ' + '─'.repeat(maxLineLength) + '\n' +
-		header +
-		formatEvoRow('Line', userCoverageDetails.evosuite_line, robotCoverageDetails.evosuite_line) + '\n' +
-		formatEvoRow('Branch', userCoverageDetails.evosuite_branch, robotCoverageDetails.evosuite_branch) + '\n' +
-		formatEvoRow('Exception', userCoverageDetails.evosuite_exception, robotCoverageDetails.evosuite_exception) + '\n' +
-		formatEvoRow('WeakMutation', userCoverageDetails.evosuite_weak_mutation, robotCoverageDetails.evosuite_weak_mutation) + '\n' +
-		formatEvoRow('CBranch', userCoverageDetails.evosuite_cbranch, robotCoverageDetails.evosuite_cbranch) + '\n\n';
+	console.log("isGameEnd", isGameEnd)
+	if (isGameEnd) {
+		result +=
+			'    ' + '─'.repeat(maxLineLength) + '\n' +
+			`    ${centerText(terminalMessages.evosuite_table_title, maxLineLength)}\n` +
+			'    ' + '─'.repeat(maxLineLength) + '\n' +
+			header +
+			formatEvoRow('Line', userCoverageDetails.evosuite_line, robotCoverageDetails.evosuite_line) + '\n' +
+			formatEvoRow('Branch', userCoverageDetails.evosuite_branch, robotCoverageDetails.evosuite_branch) + '\n' +
+			formatEvoRow('Exception', userCoverageDetails.evosuite_exception, robotCoverageDetails.evosuite_exception) + '\n' +
+			formatEvoRow('WeakMutation', userCoverageDetails.evosuite_weak_mutation, robotCoverageDetails.evosuite_weak_mutation) + '\n' +
+			formatEvoRow('CBranch', userCoverageDetails.evosuite_cbranch, robotCoverageDetails.evosuite_cbranch) + '\n\n';
+	}
 
 	return result;
 }
@@ -266,19 +269,46 @@ function highlightCodeCoverage(reportContent, robotContent, editor) {
 	var partiallyCoveredLinesRobot = [];
 
 	reportContent.querySelectorAll("line").forEach(function (line) {
-		if (line.getAttribute("mi") == 0)
+		const mi = parseInt(line.getAttribute("mi"));
+		const ci = parseInt(line.getAttribute("ci"));
+		const mb = parseInt(line.getAttribute("mb"));
+		const cb = parseInt(line.getAttribute("cb"));
+
+		const totalInstructions = mi + ci;
+		const totalBranches = mb + cb;
+
+		const allInstructionsCovered = (mi === 0);
+		const allBranchesCovered = (totalBranches === 0 || mb === 0);
+
+		if (allInstructionsCovered && allBranchesCovered) {
 			coveredLines.push(line.getAttribute("nr"));
-		else if (line.getAttribute("mb") > 0 && line.getAttribute("cb") > 0)
+		} else if ((ci > 0 || cb > 0)) {
 			partiallyCoveredLines.push(line.getAttribute("nr"));
-		else uncoveredLines.push(line.getAttribute("nr"));
+		} else {
+			uncoveredLines.push(line.getAttribute("nr"));
+		}
 	});
 
+
 	robotContent.querySelectorAll("line").forEach(function (line) {
-		if (line.getAttribute("mi") == 0)
-			coveredLinesRobot.push(line.getAttribute("nr"));
-		else if (line.getAttribute("mb") > 0 && line.getAttribute("cb") > 0)
-			partiallyCoveredLinesRobot.push(line.getAttribute("nr"));
-		else uncoveredLinesRobot.push(line.getAttribute("nr"));
+		const mi = parseInt(line.getAttribute("mi"));
+		const ci = parseInt(line.getAttribute("ci"));
+		const mb = parseInt(line.getAttribute("mb"));
+		const cb = parseInt(line.getAttribute("cb"));
+
+		const totalInstructions = mi + ci;
+		const totalBranches = mb + cb;
+
+		const allInstructionsCovered = (mi === 0);
+		const allBranchesCovered = (totalBranches === 0 || mb === 0);
+
+		if (allInstructionsCovered && allBranchesCovered) {
+			coveredLines.push(line.getAttribute("nr"));
+		} else if ((ci > 0 || cb > 0)) {
+			partiallyCoveredLines.push(line.getAttribute("nr"));
+		} else {
+			uncoveredLines.push(line.getAttribute("nr"));
+		}
 	});
 
 	let decreaseRobotLines = 1;
