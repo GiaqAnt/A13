@@ -1,18 +1,14 @@
 package com.example.db_setup.security.jwt;
 
+import testrobotchallenge.commons.models.user.Role;
 import com.example.db_setup.security.AuthenticationPropertiesConfig;
-import com.example.db_setup.security.services.UserDetailsImpl;
 import io.jsonwebtoken.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
-import org.springframework.web.util.WebUtils;
 
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.Date;
 
@@ -22,20 +18,19 @@ public class JwtProvider {
     private static final Logger logger = LoggerFactory.getLogger(JwtProvider.class);
     private final AuthenticationPropertiesConfig authProperties;
 
-    public String getCookieFromRequest(HttpServletRequest request, String name) {
-        Cookie cookie = WebUtils.getCookie(request, name);
-        if (cookie != null) {
-            return cookie.getValue();
-        } else {
-            return null;
-        }
-    }
+    public ResponseCookie generateJwtCookie(String email, Long userId, Role role) {
+        String jwt = Jwts.builder()
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date((new Date()).getTime() + authProperties.getJwtCookieExpirationMs()))
+                .claim("userId", userId)
+                .claim("role", role)
+                .signWith(SignatureAlgorithm.HS256, "mySecretKey")
+                .compact();
 
-    public ResponseCookie generateJwtCookie(String email, Integer id) {
-        String jwt = generateTokenFromEmail(email, id);
         ResponseCookie cookie = ResponseCookie.from(authProperties.getJwtCookieName(), jwt)
                 .path("/")
-                .maxAge(24 * 60 * 60)
+                .maxAge(authProperties.getJwtCookieExpirationMs() / 1000 + 7200)
                 .build();
 
         return cookie;
@@ -55,33 +50,45 @@ public class JwtProvider {
         return claims.getSubject();
     }
 
-    public boolean validateJwtToken(String authToken) {
+    public Role getUserRoleFromJwtToken(String authToken) {
+        Claims claims = Jwts.parser()
+                .setSigningKey("mySecretKey")
+                .parseClaimsJws(authToken)
+                .getBody();
+
+        return Role.valueOf(claims.get("role", String.class));
+    }
+
+    public JwtValidationResult validateJwtToken(String authToken) {
         try {
             Claims claims = Jwts.parser()
                     .setSigningKey("mySecretKey")
                     .parseClaimsJws(authToken)
                     .getBody();
 
-            return Instant.now().isBefore(claims.getExpiration().toInstant());
+            if (Instant.now().isBefore(claims.getExpiration().toInstant())) {
+                logger.info("Jwt is valid");
+                return new JwtValidationResult(true, null, null);
+            } else {
+                logger.info("Jwt is expired");
+                return new JwtValidationResult(false, "EXPIRED", "JWT token is expired");
+            }
+
         } catch (MalformedJwtException e) {
-            logger.error("Invalid JWT token: {}", e.getMessage());
+            logger.info("Jwt is malformed: {}", e.getMessage());
+            return new JwtValidationResult(false, "MALFORMED", e.getMessage());
         } catch (UnsupportedJwtException e) {
-            logger.error("JWT token is unsupported: {}", e.getMessage());
+            logger.info("Jwt is unsupported: {}", e.getMessage());
+            return new JwtValidationResult(false, "UNSUPPORTED", e.getMessage());
         } catch (IllegalArgumentException e) {
-            logger.error("JWT claims string is empty: {}", e.getMessage());
+            logger.info("Jwt is empty: {}", e.getMessage());
+            return new JwtValidationResult(false, "EMPTY", e.getMessage());
+        } catch (ExpiredJwtException e) {
+            logger.info("Jwt is expired: {}", e.getMessage());
+            return new JwtValidationResult(false, "EXPIRED", e.getMessage());
+        } catch (Exception e) {
+            logger.info("Jwt is invalid: {}", e.getMessage());
+            return new JwtValidationResult(false, "INVALID", e.getMessage());
         }
-
-        return false;
-    }
-
-    public String generateTokenFromEmail(String email, Integer userId) {
-        return Jwts.builder()
-                .setSubject(email)
-                .setIssuedAt(new Date())
-                .setExpiration(new Date((new Date()).getTime() + authProperties.getJwtCookieExpirationMs()))
-                .claim("userId", userId)
-                .claim("role", "user")
-                .signWith(SignatureAlgorithm.HS256, "mySecretKey")
-                .compact();
     }
 }

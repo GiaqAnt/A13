@@ -4,7 +4,8 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 
-import com.example.db_setup.model.User;
+import com.example.db_setup.model.Admin;
+import com.example.db_setup.model.Player;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -13,7 +14,7 @@ public class UserDetailsImpl implements UserDetails {
     private static final long serialVersionUID = 1L;
 
     @Getter
-    private final Integer id;
+    private final Long id;
     @Getter
     private final String email;
     @Getter
@@ -21,17 +22,25 @@ public class UserDetailsImpl implements UserDetails {
 
     private Collection<? extends GrantedAuthority> authorities;
 
-    public UserDetailsImpl(Integer id, String email, String password) {
+    public UserDetailsImpl(Long id, String email, String password) {
         this.id = id;
         this.email = email;
         this.password = password;
     }
 
-    public static UserDetailsImpl build(User user) {
+    public static UserDetailsImpl build(Player player) {
         return new UserDetailsImpl(
-                user.getID(),
-                user.getEmail(),
-                user.getPassword()
+                player.getID(),
+                player.getEmail(),
+                player.getPassword()
+        );
+    }
+
+    public static UserDetailsImpl build(Admin admin) {
+        return new UserDetailsImpl(
+                admin.getId(),
+                admin.getEmail(),
+                admin.getPassword()
         );
     }
 

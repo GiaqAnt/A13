@@ -14,4 +14,5 @@ public class AuthenticationPropertiesConfig {
     private String jwtRefreshCookieName;
     private Long jwtCookieExpirationMs;
     private Long jwtRefreshCookieExpirationMs;
+    private Long passwordResetTokenExpirationMs;
 }

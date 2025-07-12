@@ -138,18 +138,21 @@
 	<script>
 		document.addEventListener("DOMContentLoaded", () => {
 			const logout_button = document.getElementById("logout_button");
-			console.log(logout_button)
 			if (logout_button) {
 				logout_button.addEventListener("click", async (event) => {
 					event.preventDefault();
 					try {
-						const response = await $.ajax({
-							url: "/auth/logout",
-							type: "POST",
+						const response = await fetch("/api/userService/auth/logout", {
+							method: "POST",
 							credentials: "include"
 						});
-						console.log("Logout effettuato:", response);
-						window.location.href = "/login";
+
+						if (response.ok) {
+							console.log("Logout effettuato");
+							window.location.href = "/login";
+						} else {
+							console.error("Errore durante il logout:", response.status);
+						}
 					} catch (error) {
 						console.error("Si è verificato un errore:", error);
 					}
@@ -157,6 +160,7 @@
 			}
 		});
 	</script>
+
 </nav>
 
 
