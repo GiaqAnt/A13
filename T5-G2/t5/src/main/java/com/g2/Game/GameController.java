@@ -43,6 +43,7 @@ import com.g2.Session.Exceptions.GameModeAlreadyExist;
 import com.g2.Session.Exceptions.GameModeDontExist;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
+import testrobotchallenge.commons.models.opponent.GameMode;
 
 //Qui introduco tutte le chiamate REST per la logica di gioco/editor
 @CrossOrigin
@@ -92,13 +93,13 @@ public class GameController {
             GameParams gameParams = GameParamsFactory.createGameParams(request);
             GameLogic game = gameServiceManager.CreateGameLogic(gameParams);
 
-            logger.info("[START_GAME] Partita creata con successo. GameID={}, mode={}", game.getGameID(), game.getMode());
+            logger.info("[START_GAME] Partita creata con successo. GameID={}, mode={}", game.getGameID(), game.getGameMode());
             return ResponseEntity.ok(
                     new StartGameResponseDTO(game.getGameID(),
                             "created")
             );
         } catch (GameModeAlreadyExist e) {
-            logger.error("[GAMECONTROLLER][StartGame] " + e.getMessage());
+            logger.error("[GAMECONTROLLER][StartGame] {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new StartGameResponseDTO(-1, "GameAlreadyExistsException"));
         }
@@ -172,9 +173,10 @@ public class GameController {
     public ResponseEntity<RunGameResponseDTO> Runner(@RequestBody RunGameRequestDTO request) {
         try {
             GameParams updateGameParams = GameParamsFactory.updateGameParams(request);
-            String playerId = request.getPlayerId();
-            String mode = request.getMode();
-            RunGameResponseDTO response = gameServiceManager.PlayGame(playerId, mode, updateGameParams);
+            Long playerId = request.getPlayerId();
+            GameMode mode = request.getMode();
+            RunGameResponseDTO response = gameServiceManager.PlayGame(playerId, mode, updateGameParams, "T7");
+            logger.info("[POST /run] Response={}", response);
             return ResponseEntity.ok().body(response);
         } catch (GameModeDontExist e) {
             /*
@@ -201,8 +203,8 @@ public class GameController {
             RunGameRequestDTO request = objectMapper.readValue(rawRequest, RunGameRequestDTO.class);
 
             GameParams updateGameParams = GameParamsFactory.updateGameParams(request);
-            String playerId = request.getPlayerId();
-            String mode = request.getMode();
+            Long playerId = request.getPlayerId();
+            GameMode mode = request.getMode();
             logger.info("[POST /leave] Ricevuta richiesta salvataggio sessione per playerId={}", playerId);
             gameServiceManager.LeaveGame(playerId, mode, updateGameParams);
             return ResponseEntity.ok().body(null);
@@ -221,11 +223,11 @@ public class GameController {
     public ResponseEntity<EndGameResponseDTO> EndGame(@RequestBody RunGameRequestDTO request) {
         try {
             GameParams updateGameParams = GameParamsFactory.updateGameParams(request);
-            String playerId = request.getPlayerId();
-            String mode = request.getMode();
+            Long playerId = request.getPlayerId();
+            GameMode mode = request.getMode();
 
             if (!request.getTestingClassCode().isEmpty())
-                gameServiceManager.PlayGame(playerId, mode, updateGameParams);
+                gameServiceManager.PlayGame(playerId, mode, updateGameParams, "All");
 
             logger.info("[POST /EndGame] Ricevuta richiesta terminazione partita per playerId={}", playerId);
             EndGameResponseDTO response = gameServiceManager.EndGame(playerId, mode, false);
@@ -240,8 +242,25 @@ public class GameController {
         }
     }
 
+    @PostMapping(value="/CompileEvosuite", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<RunGameResponseDTO> CompileEvosuiteBeforeEnding(@RequestBody RunGameRequestDTO request) {
+        try {
+            GameParams updateGameParams = GameParamsFactory.updateGameParams(request);
+            Long playerId = request.getPlayerId();
+            GameMode mode = request.getMode();
+            RunGameResponseDTO response = gameServiceManager.PlayGame(playerId, mode, updateGameParams, "T8");
+            return ResponseEntity.ok().body(response);
+        } catch (GameModeDontExist e) {
+            /*
+             * Il player non ha impostato una partita prima di arrivare all'editor
+             */
+            logger.error("[GAMECONTROLLER][run] " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
+    }
+
     @DeleteMapping(value = "/SurrenderGame/{playerId}")
-    public ResponseEntity<EndGameResponseDTO> SurrenderGame(@PathVariable String playerId, @RequestParam String mode) {
+    public ResponseEntity<EndGameResponseDTO> SurrenderGame(@PathVariable Long playerId, @RequestParam GameMode mode) {
         try {
             EndGameResponseDTO response = gameServiceManager.EndGame(playerId, mode, true);
             logger.error("[DELETE /SurrenderGame] Invio risposta per playerId={}: {} ", playerId, response);
