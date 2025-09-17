@@ -8,6 +8,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.parser.Parser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -43,12 +45,11 @@ public class UploadRobotService {
     private static final String JACOCO_COVERAGE_FILE = "coveragetot.xml";
     private static final String EVOSUITE_COVERAGE_FILE = "statistics.csv";
 
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(UploadRobotService.class.getName());
+    private final Logger logger = LoggerFactory.getLogger(UploadRobotService.class);
 
     //--------------------------------------------------
 
     private final ApiGatewayClient apiGatewayClient;
-    @Autowired
 	private final OpponentRepository opponentRepository;
 
 	public UploadRobotService(ApiGatewayClient apiGatewayClient, OpponentRepository opponentRepository) {
@@ -65,27 +66,27 @@ public class UploadRobotService {
         FileOperationUtil.extractZipIn(operationTmpFolder);
 
         Path unmodifiedSrcCodePath = Paths.get(String.format("%s/%s/%s", VOLUME_T0_BASE_PATH, UNMODIFIED_SRC, classUTName));
-        logger.info("Saving unmodified src in " + unmodifiedSrcCodePath);
+        logger.info("Saving unmodified src in {}", unmodifiedSrcCodePath);
         FileOperationUtil.saveFileInFileSystem(classUTFileName, unmodifiedSrcCodePath, classUTFile);
 
         File robotGroupFolder = Objects.requireNonNull(operationTmpFolder.toFile().listFiles())[0];
-        logger.info("Robot tests folder " + robotGroupFolder);
+        logger.info("Robot tests folder {}", robotGroupFolder);
         for (File robotFolder : Objects.requireNonNull(robotGroupFolder.listFiles())) {
             if (!robotFolder.isDirectory()) {
-                logger.info("Ignoring file " + robotFolder + " because it is not a directory");
+                logger.info("Ignoring file {} because it is not a directory", robotFolder);
                 continue;
             }
 
             String robotType = robotFolder.getName();
             if (!robotType.endsWith("Test")) {
-                logger.info("Ignoring directory " + robotFolder + " because it does not follow the naming convention");
+                logger.info("Ignoring directory {} because it does not follow the naming convention", robotFolder);
                 continue;
             }
             robotType = robotType.substring(0, robotType.length() - 4).toLowerCase();
             robotType = Character.toUpperCase(robotType.charAt(0)) + robotType.substring(1);
 
-            logger.info("Robot folder " + robotFolder);
-            logger.info("Saving robot type " + robotType);
+            logger.info("Robot folder {}", robotFolder);
+            logger.info("Saving robot type {}", robotType);
 
             uploadNewOpponents(classUTFileName, classUTName, classUTFile, robotFolder.toPath(), robotType, Paths.get(VOLUME_T0_BASE_PATH));
         }
@@ -321,35 +322,31 @@ public class UploadRobotService {
             boolean[] coverageFound = saveCoverageFilesInVolume(fromCoveragePath, toCoveragePath);
 
             if (!coverageFound[1]) {
-                Path srcCode_EvoSuiteTmp = Paths.get(String.format("%s/%s/%s", volumeBasePath, classUTName + "_EvoSuiteCoverage", BASE_SRC_PATH));
-                Path testCodeT8_EvoSuiteTmp = Paths.get(String.format("%s/%s/%s", volumeBasePath, classUTName + "_EvoSuiteCoverage", BASE_TEST_PATH));
+                Path tmpFolder_ToZip = Paths.get(String.format("%s/%s/tmp_zip", volumeBasePath, classUTName));
 
-                splitPackageNames = saveTestFilesInVolume(fromTestPath, testCodeT8_EvoSuiteTmp, classUTName, robotType);
-                String[] srcPackageName_EvoSuiteTmp = splitPackageNames[0];
-                String[] testPackageName_EvoSuiteTmp = splitPackageNames[1];
-                saveSrcFileInVolume(classUTFile, srcCode_EvoSuiteTmp, srcPackageName_EvoSuiteTmp, classUTFileName);
+                Files.createDirectories(Paths.get(String.format("%s/%s", tmpFolder_ToZip, Paths.get(BASE_SRC_PATH))));
+                FileOperationUtil.copyDirectoryRecursively(toSrcPath, Paths.get(String.format("%s/%s", tmpFolder_ToZip, Paths.get(BASE_SRC_PATH))));
 
-                String srcPackagePath = "";
-                if (srcPackageName_EvoSuiteTmp != null) {
-                    srcPackagePath = String.join(".", srcPackageName_EvoSuiteTmp) + ".";
-                }
+                Files.createDirectories(Paths.get(String.format("%s/%s", tmpFolder_ToZip, Paths.get(BASE_TEST_PATH))));
+                FileOperationUtil.copyDirectoryRecursively(toTestPath, Paths.get(String.format("%s/%s", tmpFolder_ToZip, Paths.get(BASE_TEST_PATH))));
 
-                String testPackagePath = "";
-                if (testPackageName_EvoSuiteTmp != null) {
-                    testPackagePath = String.join(".", testPackageName_EvoSuiteTmp) + ".";
-                }
+                FileOperationUtil.zipDirectory(String.format("%s/src", tmpFolder_ToZip), String.format("%s/src.zip", tmpFolder_ToZip));
+                File zip = new File(String.format("%s/src.zip", tmpFolder_ToZip));
 
-                Path evoSuiteWorkingPath = Paths.get(String.format("%s/%s", volumeBasePath, classUTName + "_EvoSuiteCoverage"));
-                logger.info("Creating evosuite folder: " + Files.createDirectories(evoSuiteWorkingPath));
-                try {
-                    EvosuiteCoverageDTO coverageDTO = apiGatewayClient.callGenerateMissingEvoSuiteCoverage(classUTName, srcPackagePath, srcCode_EvoSuiteTmp, testCodeT8_EvoSuiteTmp, toCoveragePath, evoSuiteWorkingPath, testPackagePath);
+                String srcPackage = "";
+                if (srcPackageNameSplit != null)
+                    srcPackage = String.join(".", srcPackageNameSplit) + ".";
+
+                if (!zip.exists()) {
+                    System.err.println("Errore: Il file ZIP non è stato creato correttamente.");
+                    FileOperationUtil.deleteDirectoryRecursively(tmpFolder_ToZip);
+                } else {
+                    EvosuiteCoverageDTO coverageDTO = apiGatewayClient.callGenerateMissingEvoSuiteCoverage(classUTName, srcPackage, zip);
                     FileOperationUtil.writeStringToFile(coverageDTO.getResultFileContent(), new File(String.format("%s/%s", toCoveragePath, "statistics.csv")));
-                    FileOperationUtil.deleteDirectoryRecursively(evoSuiteWorkingPath);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    FileOperationUtil.deleteDirectoryRecursively(evoSuiteWorkingPath);
-                    throw new RuntimeException(e);
                 }
+
+                Files.delete(zip.toPath());
+                FileOperationUtil.deleteDirectoryRecursively(tmpFolder_ToZip);
             }
 
             if (!coverageFound[0]) {

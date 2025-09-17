@@ -1,7 +1,5 @@
 package com.example.db_setup.controller;
 
-import com.example.db_setup.model.Admin;
-import com.example.db_setup.model.Player;
 import testrobotchallenge.commons.models.dto.auth.JwtValidationResponseDTO;
 import testrobotchallenge.commons.models.user.Role;
 import com.example.db_setup.model.dto.auth.*;
@@ -19,6 +17,10 @@ import javax.mail.MessagingException;
 import javax.validation.Valid;
 import java.util.Locale;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 @RestController
 @CrossOrigin
 @RequestMapping("/auth")
@@ -26,13 +28,17 @@ import java.util.Locale;
 public class AuthController {
 
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
-
     private final AuthService authService;
 
-
     @PostMapping("/register")
-    public ResponseEntity<Player> registerUser(@Valid @RequestBody UserRegistrationDTO userRegistrationDTO) {
-        Player newPlayer = authService.registerPlayer(userRegistrationDTO.getName(), userRegistrationDTO.getSurname(),
+    @Operation(summary = "Register a new player user", description = "Registers a new player with provided personal details and credentials.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Player registered successfully"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or validation error"),
+            @ApiResponse(responseCode = "409", description = "Email already in use")
+    })
+    public ResponseEntity<Object> registerUser(@Valid @RequestBody UserRegistrationDTO userRegistrationDTO) {
+        authService.registerPlayer(userRegistrationDTO.getName(), userRegistrationDTO.getSurname(),
                 userRegistrationDTO.getEmail(), userRegistrationDTO.getPassword(), userRegistrationDTO.getPasswordCheck(),
                 userRegistrationDTO.getStudies());
 
@@ -41,7 +47,7 @@ public class AuthController {
 
     @PostMapping("/admin/register")
     public ResponseEntity<Object> registerAdmin(@Valid @RequestBody AdminRegistrationDTO adminRegistrationDTO) {
-        Admin newAdmin = authService.registerAdmin(adminRegistrationDTO.getName(), adminRegistrationDTO.getSurname(),
+        authService.registerAdmin(adminRegistrationDTO.getName(), adminRegistrationDTO.getSurname(),
                 adminRegistrationDTO.getEmail(), adminRegistrationDTO.getPassword(),
                 adminRegistrationDTO.getPasswordCheck());
 
