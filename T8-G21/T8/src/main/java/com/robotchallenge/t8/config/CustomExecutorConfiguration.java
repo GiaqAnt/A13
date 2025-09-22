@@ -104,7 +104,6 @@ public class CustomExecutorConfiguration {
                 throw new TimeoutException("Timeout durante l'esecuzione del task");
             } finally {
                 timeoutExecutor.shutdownNow();
-                timeoutExecutor.close();
             }
         }
 
