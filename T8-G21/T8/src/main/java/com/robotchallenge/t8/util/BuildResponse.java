@@ -1,8 +1,8 @@
 package com.robotchallenge.t8.util;
 
+import testrobotchallenge.commons.models.dto.score.EvosuiteCoverageDTO;
 import testrobotchallenge.commons.models.dto.score.basic.CoverageDTO;
 import testrobotchallenge.commons.models.dto.score.basic.EvosuiteScoreDTO;
-import testrobotchallenge.commons.models.dto.score.EvosuiteCoverageDTO;
 import testrobotchallenge.commons.util.ExtractScore;
 
 /**
@@ -29,7 +29,7 @@ public class BuildResponse {
      *
      * @param result il contenuto del file di output EvoSuite
      * @return un {@link EvosuiteScoreDTO} contenente le metriche di copertura
-     *         (linee, branch, eccezioni, mutazioni, output, ...)
+     * (linee, branch, eccezioni, mutazioni, output, ...)
      */
     public static EvosuiteScoreDTO buildDTO(String result) {
         int[][] score = ExtractScore.fromEvosuite(result);
@@ -70,7 +70,7 @@ public class BuildResponse {
      *
      * @param result il contenuto del file di output EvoSuite
      * @return un {@link EvosuiteCoverageDTO} contenente sia i punteggi elaborati
-     *         sia il risultato originale in formato testuale
+     * sia il risultato originale in formato testuale
      */
     public static EvosuiteCoverageDTO buildExtendedDTO(String result) {
         EvosuiteCoverageDTO responseBody = new EvosuiteCoverageDTO();

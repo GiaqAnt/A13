@@ -2,6 +2,7 @@ package com.robotchallenge.t8.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import testrobotchallenge.commons.models.dto.score.EvosuiteCoverageDTO;
 
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -37,6 +38,28 @@ public class CustomExecutorConfiguration {
     private static final int MAX_QUEUE_TIME = 180_000; // 3 minuti
 
     private static final Logger logger = Logger.getLogger(CustomExecutorConfiguration.class.getName());
+    // Lock per sincronizzare l'accesso alla coda
+    private static final Object lock = new Object();
+
+    @Bean
+    public CustomExecutorService compileExecutor() {
+        ExecutionTimeMonitor monitor = new ExecutionTimeMonitor();
+        BlockingQueue<Runnable> queue = new ExpiringBlockingQueue(MAX_QUEUE_SIZE, MAX_QUEUE_TIME);
+
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                CORE_POOL_SIZE,
+                MAX_POOL_SIZE,
+                60L,
+                TimeUnit.SECONDS,
+                queue,
+                new SmartRejectHandler(monitor)
+        );
+        executor.allowCoreThreadTimeOut(true);
+
+        ExpiringTaskCleaner.startCleanerThread(queue, MAX_QUEUE_TIME, 10_000);
+
+        return new CustomExecutorService(executor, monitor);
+    }
 
     /**
      * Interfaccia che estende {@link Runnable} e aggiunge la possibilità di tracciare
@@ -56,6 +79,7 @@ public class CustomExecutorConfiguration {
         /**
          * Aggiunge in coda il tempo di esecuzione dell'ultimo task completato. Se la coda è piena, ne rimuove
          * la testa, corrispondente al task più vecchio.
+         *
          * @param time Tempo impiegato per completare l'ultimo task.
          */
         public synchronized void addExecutionTime(long time) {
@@ -67,7 +91,7 @@ public class CustomExecutorConfiguration {
          * Calcola la media dei tempi di esecuzione memorizzati nella coda.
          *
          * @return la media dei tempi di esecuzione in millisecondi, oppure {@code 0}
-         *         se la coda non contiene valori.
+         * se la coda non contiene valori.
          */
         public synchronized long getAverageExecutionTime() {
             return (long) executionTimes.stream().mapToLong(Long::longValue).average().orElse(0);
@@ -177,9 +201,6 @@ public class CustomExecutorConfiguration {
         }
     }
 
-    // Lock per sincronizzare l'accesso alla coda
-    private static final Object lock = new Object();
-
     public static class ExpiringTaskCleaner {
         private ExpiringTaskCleaner() {
             throw new IllegalStateException("Cleaner class");
@@ -246,7 +267,6 @@ public class CustomExecutorConfiguration {
             return removed;
         }
     }
-
 
     // Espandiamo la classe ExpiringBlockingQueue
     public static class ExpiringBlockingQueue extends LinkedBlockingQueue<Runnable> {
@@ -316,26 +336,6 @@ public class CustomExecutorConfiguration {
 
     }
 
-    @Bean
-    public CustomExecutorService compileExecutor() {
-        ExecutionTimeMonitor monitor = new ExecutionTimeMonitor();
-        BlockingQueue<Runnable> queue = new ExpiringBlockingQueue(MAX_QUEUE_SIZE, MAX_QUEUE_TIME);
-
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                CORE_POOL_SIZE,
-                MAX_POOL_SIZE,
-                60L,
-                TimeUnit.SECONDS,
-                queue,
-                new SmartRejectHandler(monitor)
-        );
-        executor.allowCoreThreadTimeOut(true);
-
-        ExpiringTaskCleaner.startCleanerThread(queue, MAX_QUEUE_TIME, 10_000);
-
-        return new CustomExecutorService(executor, monitor);
-    }
-
     public static class CustomExecutorService {
         private final ThreadPoolExecutor executor;
         private final ExecutionTimeMonitor monitor;
@@ -345,9 +345,9 @@ public class CustomExecutorConfiguration {
             this.monitor = monitor;
         }
 
-        public Future<String> submitTask(Callable<String> userTask) {
-            CompletableFuture<String> future = new CompletableFuture<>();
-            TimedTask<String> timedTask = new TimedTask<>(userTask, monitor, MAX_QUEUE_TIME, EXECUTION_TIME_THRESHOLD, future);
+        public Future<EvosuiteCoverageDTO> submitTask(Callable<EvosuiteCoverageDTO> userTask) {
+            CompletableFuture<EvosuiteCoverageDTO> future = new CompletableFuture<>();
+            TimedTask<EvosuiteCoverageDTO> timedTask = new TimedTask<>(userTask, monitor, MAX_QUEUE_TIME, EXECUTION_TIME_THRESHOLD, future);
 
             executor.execute(timedTask);
 
